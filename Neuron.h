@@ -18,18 +18,20 @@ class NW
 {
 private:
 	static const int _size = 4;
-	neuron first[_size];
-	neuron second;
-	
+
+
 protected:
 	inline double f(double x);
 	void ProcessNeuron(neuron& n, vector<double>& in);
 
 public:
+	neuron first[_size];
+	neuron second;
 	double score = 0;
-	double Calc(vector<double>& in);
-	NW MakeChild(NW& nw);
-	void Mutate();
+	bool LowScore = false;
+	inline double Calc(vector<double>& in);
+	inline NW MakeChild(NW& nw);
+	inline void Mutate();
 	NW();
 	//NW(NW& nw);
 	NW& operator = (const NW& right);
@@ -40,19 +42,24 @@ public:
 class NWM
 {
 private:
-	static const int _size = 100;
-	vector<NW>gen;
+	static const int _size = 5000;
+	const double MCver = 0.25;
+	const double MutationVer = 0.2;
 
 	vector<vector<double>>test;
 	vector<double> answer;
-	
+
 	NW Perfect;
+
+
 protected:
 	void CreateTests();
 	inline double score(NW& nw);
 public:
 	NWM();
-	
+	~NWM();
 	int Train();
 	void ShowTests();
+	vector<NW>gen;
+
 };

@@ -1,5 +1,8 @@
 #include"Neuron.h"
 #include<algorithm>
+#include<time.h>
+#include<iostream>
+using namespace std;
 double rand(double left, double right)
 {
 	return left + (right - left) * double(rand()) / double(RAND_MAX);
@@ -19,17 +22,18 @@ neuron::neuron(int size)
 
 NW::NW()
 {
+
 	for (int i = 0; i < _size; i++)
 	{
 		first[i] = neuron(3);
 	}
 	second = neuron(_size);
 }
-//NW::NW(NW& nw)
-//{
-//	second = nw.second;
-//	for (int i = 0; i < _size; i++)first[i] = nw.first[i];
-//}
+NWM::~NWM()
+{
+}
+
+
 NW& NW::operator = (const NW& nw)
 {
 	second = nw.second;
@@ -77,21 +81,29 @@ void NWM::CreateTests()
 NW NW::MakeChild(NW& nw)
 {
 	NW res;
-	
+
+	double chance = 0;
 	for (int i = 0; i < _size; i++)
 	{
-		res.second.w[i] = (second.w[i] + nw.second.w[i]) / 2.;
+		chance = rand(0, 1);
+		res.second.w[i] = chance * second.w[i] + (1 - chance) * nw.second.w[i];
 	}
-	res.second.fi = (second.fi + nw.second.fi) / 2.;
+	chance = rand(0, 1);
+
+	res.second.fi = chance * second.fi + (1 - chance) * nw.second.fi;
 
 
 	for (int i = 0; i < _size; i++)
 	{
 		for (int j = 0; j < 3; j++)
 		{
-			res.first[i].w[j] = (first[i].w[j] + nw.first[i].w[j]) / 2.;
+			chance = rand(0, 1);
+
+			res.first[i].w[j] = chance * first[i].w[j] + (1 - chance) * nw.first[i].w[j];
 		}
-		res.first[i].fi = (first[i].fi + nw.first[i].fi) / 2.;
+		chance = rand(0, 1);
+
+		res.first[i].fi = chance * first[i].fi + (1 - chance) * nw.first[i].fi;
 	}
 	return res;
 }
@@ -116,10 +128,16 @@ void NW::Mutate()
 
 
 
+
 //-----------------------------------------------------------------------------
 NWM::NWM()
 {
-	gen = vector<NW>(_size, NW());
+	srand(time(NULL));
+	for (int i = 0; i < _size; i++)
+	{
+		NW temp;
+		gen.push_back(temp);
+	}
 	CreateTests();
 }
 
@@ -129,7 +147,7 @@ inline double NWM::score(NW& nw)
 	double res = 0;
 	for (int i = 0; i < test.size(); i++)
 	{
-		double temp= nw.Calc(test[i]);
+		double temp = nw.Calc(test[i]);
 		temp -= answer[i];
 		temp *= temp;
 		res += temp;
@@ -140,65 +158,91 @@ inline double NWM::score(NW& nw)
 
 
 
-
-bool compare(NW& left, NW& right)
+int GetPerfectId(vector<NW>& gen)
 {
-	return left.score > right.score;
+	int id = 0;
+	int _size = gen.size();
+	for (int i = 1; i < _size; i++)
+	{
+		if (gen[id].score > gen[i].score)id = i;
+	}
+	return id;
 }
+
 int NWM::Train()
 {
 	int ctr = 0;
 
 	while (1)
 	{
-		double AvgMist = 0;
-		int cNum = gen.size() / 2. - 1;
-		int half = gen.size() / 2. + 1;
-		int cSize = gen.size();
-		for (int i = 0; i < cNum; i++)
-		{
-			NW temp;
-			temp = gen[i].MakeChild(gen[rand(half, cSize)]);
-			gen.push_back(temp);
-		}
-		
-		for (int i = 0; i < gen.size(); i++)
-		{
-			gen[i].score = score(gen[i]);
-			AvgMist += gen[i].score;
-		}
-		AvgMist /= gen.size();
+		int cursize = gen.size();
+		if (cursize == 1)break;
 
 		for (int i = 0; i < gen.size(); i++)
 		{
-			if (AvgMist > gen[i].score)
+			gen[i].score = score(gen[i]);
+		}
+		if (ctr % 500 == 0)
+		{
+			cout << ctr << endl;
+			int id = GetPerfectId(gen);
+			Perfect = gen[id];
+			ShowTests();
+		}
+
+		cursize = gen.size();
+		for (int i = 0; i < cursize; i += 2)
+		{
+			if (gen[i].score < gen[i + 1].score)
 			{
-				gen[i] = gen[0];
-				gen.erase(gen.begin());
-				i--;
+				gen[i].LowScore = true;
+				gen[i + 1].LowScore = false;
+			}
+			else
+			{
+				gen[i].LowScore = false;
+				gen[i + 1].LowScore = true;
 			}
 		}
-		sort(gen.begin(), gen.end(), compare);
-		if (gen[0].score < 1e-2)
+
+		vector<NW> newgen;
+		for (int i = 0; i < gen.size(); i++)
+		{
+			if (gen[i].LowScore)newgen.push_back(gen[i]);
+		}
+		gen = newgen;
+
+		cursize = gen.size();
+		for (int i = 0; i < cursize; i++)
+		{
+			int id = rand(0, cursize - 0.1);
+			while (id == i)id = rand(0, cursize - 0.1);
+			NW temp;
+			temp = gen[i].MakeChild(gen[id]);
+			gen.push_back(temp);
+		}
+
+		for (int i = 0; i < gen.size(); i++)
+		{
+			gen[i].Mutate();
+		}
+		if (gen[0].score < 1e-4)
 		{
 			Perfect = gen[0];
 			break;
 		}
-		NW mutant = gen[0];
-		mutant.Mutate();
-		gen.push_back(mutant);
-
-		if (ctr >= 1e6)break;
+		ctr++;
+		
+		if (ctr >= 1e5)break;
 	}
-
+	int id = GetPerfectId(gen);
+	Perfect = gen[id];
 
 	return ctr;
 }
 
 
 
-#include<iostream>
-using namespace std;
 
 void NWM::ShowTests()
 {

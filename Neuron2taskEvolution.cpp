@@ -3,8 +3,9 @@
 
 int main()
 {
+
 	NWM nwm;
-	nwm.Train();
+	cout << nwm.Train() << endl;
 	nwm.ShowTests();
 }
 
