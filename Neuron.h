@@ -42,7 +42,7 @@ public:
 class NWM
 {
 private:
-	static const int _size = 5000;
+	static const int _size = 500;
 	const double MCver = 0.25;
 	const double MutationVer = 0.2;
 

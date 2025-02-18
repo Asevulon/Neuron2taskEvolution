@@ -14,9 +14,9 @@ neuron::neuron(int size)
 	w = vector<double>(size, 0);
 	for (int i = 0; i < size; i++)
 	{
-		w[i] = rand(-1, 1);
+		w[i] = rand(-0.5, 0.5);
 	}
-	fi = rand(-1, 1);
+	fi = rand(-0.5, 0.5);
 }
 
 
@@ -86,24 +86,26 @@ NW NW::MakeChild(NW& nw)
 	for (int i = 0; i < _size; i++)
 	{
 		chance = rand(0, 1);
-		res.second.w[i] = chance * second.w[i] + (1 - chance) * nw.second.w[i];
+		if (chance < 0.5)res.second.w[i] = second.w[i];
+		else res.second.w[i] = nw.second.w[i];
 	}
+
 	chance = rand(0, 1);
-
-	res.second.fi = chance * second.fi + (1 - chance) * nw.second.fi;
-
+	if (chance < 0.5)res.second.fi = second.fi;
+	else res.second.fi = nw.second.fi;
 
 	for (int i = 0; i < _size; i++)
 	{
 		for (int j = 0; j < 3; j++)
 		{
 			chance = rand(0, 1);
-
-			res.first[i].w[j] = chance * first[i].w[j] + (1 - chance) * nw.first[i].w[j];
+			if (chance < 0.5)res.first[i].w[j] = first[i].w[j];
+			else res.first[i].w[j] = nw.first[i].w[j];
 		}
-		chance = rand(0, 1);
 
-		res.first[i].fi = chance * first[i].fi + (1 - chance) * nw.first[i].fi;
+		chance = rand(0, 1);
+		if (chance < 0.5)res.first[i].fi = first[i].fi;
+		else res.first[i].fi = nw.first[i].fi;
 	}
 	return res;
 }
@@ -184,7 +186,7 @@ int NWM::Train()
 		}
 		if (ctr % 500 == 0)
 		{
-			cout << ctr << endl;
+			cout <<"Iterations: " << ctr << endl;
 			int id = GetPerfectId(gen);
 			Perfect = gen[id];
 			ShowTests();
@@ -213,12 +215,18 @@ int NWM::Train()
 		gen = newgen;
 
 		cursize = gen.size();
-		for (int i = 0; i < cursize; i++)
+		for (int i = 0; i < cursize *0.9; i++)
 		{
 			int id = rand(0, cursize - 0.1);
 			while (id == i)id = rand(0, cursize - 0.1);
 			NW temp;
 			temp = gen[i].MakeChild(gen[id]);
+			gen.push_back(temp);
+		}
+
+		for (int i = 0; i < cursize / 10; i++)
+		{
+			NW temp;
 			gen.push_back(temp);
 		}
 
